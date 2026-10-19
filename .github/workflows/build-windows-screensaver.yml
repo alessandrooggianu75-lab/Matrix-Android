@@ -1,0 +1,44 @@
+name: Build Matrix Windows Screensaver
+
+on:
+  push:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/build-windows-screensaver.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build screensaver
+        shell: pwsh
+        run: |
+          msbuild windows/MatrixScreensaver.csproj /p:Configuration=Release /p:Platform=AnyCPU
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item windows/bin/Release/MatrixScreensaver.exe dist/Matrix.scr
+          Copy-Item windows/INSTALLA_MATRIX.cmd dist/INSTALLA_MATRIX.cmd
+          Copy-Item windows/CONFIGURA_MATRIX.cmd dist/CONFIGURA_MATRIX.cmd
+          @"
+          Matrix Screensaver per Windows
+
+          1. Estrai tutti i file.
+          2. Esegui INSTALLA_MATRIX.cmd.
+          3. Per cambiare velocita, densita, dimensione, caratteri, glow, scia e FPS usa CONFIGURA_MATRIX.cmd.
+          4. Preset disponibili: Eco, Bilanciato, Massimo.
+
+          Matrix.scr supporta i parametri standard Windows /s, /c e /p.
+          "@ | Set-Content -Encoding UTF8 dist/LEGGIMI.txt
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Matrix-Windows-Screensaver
+          path: dist/*
+          if-no-files-found: error
